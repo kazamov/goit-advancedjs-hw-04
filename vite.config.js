@@ -9,8 +9,9 @@ export default defineConfig(({ command }) => {
       [command === 'serve' ? 'global' : '_global']: {},
     },
     root: 'src',
+    envDir: '../',
     build: {
-      sourcemap: true,
+      sourcemap: command === 'serve',
 
       rollupOptions: {
         input: glob.sync('./src/*.html'),
