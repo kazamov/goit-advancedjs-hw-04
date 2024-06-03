@@ -1,40 +1,61 @@
 import iziToast from 'izitoast';
+import SimpleLightbox from 'simplelightbox';
+
 import 'izitoast/dist/css/iziToast.min.css';
+import 'simplelightbox/dist/simple-lightbox.min.css';
 
 import { searchImages } from './pixabay-api';
 
 const searchForm = document.querySelector('.search-form');
-searchForm.addEventListener(
-  'submit',
-  async event => {
-    event.preventDefault();
-    const totalHits = await loadData();
-
-    if (totalHits > 0) {
-      iziToast.success({
-        title: 'Success',
-        message: `Hooray! We found ${totalHits} images.`,
-        position: 'topRight',
-      });
-    }
-  },
-  false
-);
+searchForm.addEventListener('submit', onFormSubmit, false);
 
 const gallery = document.querySelector('.gallery');
-const loadMoreButton = document.querySelector('.load-more');
-loadMoreButton.addEventListener('click', loadData, false);
+
 const searchInput = document.querySelector('input[name="searchQuery"]');
 searchInput.addEventListener('input', onSearchInput, false);
+
 const searchButton = document.querySelector('button[type="submit"]');
 const header = document.querySelector('.header');
 
 let isScrolled = false;
-let currentQuery = '';
+let shownRecords = 0;
 let currentPage = 1;
+const pageSize = 40;
+
+const lightbox = new SimpleLightbox('.gallery a', {});
+const intersectionObserver = new IntersectionObserver(handleIntersection, {
+  root: null,
+  rootMargin: '0px',
+  threshold: 0.1,
+});
+
+function handleIntersection(entries, _observer) {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      loadData();
+    }
+  });
+}
 
 function onSearchInput() {
   searchButton.disabled = searchInput.value.trim() === '';
+}
+
+async function onFormSubmit(event) {
+  event.preventDefault();
+
+  currentPage = 1;
+  gallery.innerHTML = '';
+
+  const totalHits = await loadData();
+
+  if (totalHits > 0) {
+    iziToast.success({
+      title: 'Success',
+      message: `Hooray! We found ${totalHits} images.`,
+      position: 'topRight',
+    });
+  }
 }
 
 function renderGallery(images) {
@@ -50,27 +71,29 @@ function renderGallery(images) {
         downloads,
       }) => {
         return `
-    <div class="photo-card">
-      <img src="${webformatURL}" alt="${tags}" loading="lazy" data-large-img-url="${largeImageURL}" class="image" />
-      <div class="info">
-        <p class="info-item">
-          <strong>Likes</strong>
-          <span>${likes}</span>
-        </p>
-        <p class="info-item">
-          <strong>Views</strong>
-          <span>${views}</span>
-        </p>
-        <p class="info-item">
-          <strong>Comments</strong>
-          <span>${comments}</span>
-        </p>
-        <p class="info-item">
-          <strong>Downloads</strong>
-          <span>${downloads}</span>
-        </p>
-      </div>
-    </div>
+        <a href="${largeImageURL}" class="card-link">
+          <div class="photo-card">
+            <img src="${webformatURL}" alt="${tags}" loading="lazy" class="image" />
+            <div class="info">
+              <p class="info-item">
+                <strong>Likes</strong>
+                <span>${likes}</span>
+              </p>
+              <p class="info-item">
+                <strong>Views</strong>
+                <span>${views}</span>
+              </p>
+              <p class="info-item">
+                <strong>Comments</strong>
+                <span>${comments}</span>
+              </p>
+              <p class="info-item">
+                <strong>Downloads</strong>
+                <span>${downloads}</span>
+              </p>
+            </div>
+          </div>
+        </a>
   `;
       }
     )
@@ -82,17 +105,11 @@ function renderGallery(images) {
 async function loadData() {
   const searchInputValue = searchInput.value;
 
-  if (searchInputValue !== currentQuery) {
-    currentQuery = searchInputValue;
-    currentPage = 1;
-    hideElement(loadMoreButton);
-    gallery.innerHTML = '';
-  }
-
   try {
     const { hits, totalHits } = await searchImages(
       searchInputValue,
-      currentPage
+      currentPage,
+      pageSize
     );
 
     if (hits.length === 0) {
@@ -105,11 +122,25 @@ async function loadData() {
       return;
     }
 
+    renderGallery(hits);
+    lightbox.refresh();
+
+    shownRecords += hits.length;
     currentPage += 1;
 
-    renderGallery(hits);
+    const lastElement = gallery.lastElementChild;
+    if (lastElement) {
+      intersectionObserver.observe(lastElement);
+    }
 
-    showElement(loadMoreButton);
+    if (shownRecords >= totalHits) {
+      intersectionObserver.disconnect();
+      iziToast.info({
+        title: 'Info',
+        message: `We're sorry, but you've reached the end of search results.`,
+        position: 'topRight',
+      });
+    }
 
     return totalHits;
   } catch (error) {
@@ -120,18 +151,6 @@ async function loadData() {
     });
 
     return 0;
-  }
-}
-
-function hideElement(element) {
-  if (!element.classList.contains('invisible')) {
-    element.classList.add('invisible');
-  }
-}
-
-function showElement(element) {
-  if (element.classList.contains('invisible')) {
-    element.classList.remove('invisible');
   }
 }
 

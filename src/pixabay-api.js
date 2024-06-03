@@ -3,7 +3,7 @@ import axios from 'axios';
 const API_URL = 'https://pixabay.com/api/';
 const API_KEY = import.meta.env.VITE_PIXABAY_API_KEY;
 
-export async function searchImages(searchInputValue, page) {
+export async function searchImages(searchInputValue, page, pageSize) {
   const response = await axios.get(API_URL, {
     params: {
       key: API_KEY,
@@ -11,7 +11,7 @@ export async function searchImages(searchInputValue, page) {
       image_type: 'photo',
       orientation: 'horizontal',
       safesearch: true,
-      per_page: 40,
+      per_page: pageSize,
       page,
     },
   });

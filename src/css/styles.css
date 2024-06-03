@@ -25,6 +25,7 @@ p {
   justify-content: center;
   position: sticky;
   top: 0;
+  z-index: 1;
 }
 
 .header-scrolled {
@@ -49,6 +50,16 @@ button:enabled:hover {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 1rem;
+}
+
+.card-link {
+  text-decoration: none;
+  color: #333;
+  transition: transform 0.3s ease-in-out;
+}
+
+.card-link:hover {
+  transform: scale(1.05);
 }
 
 .photo-card {
@@ -76,9 +87,4 @@ button:enabled:hover {
       align-items: center;
     }
   }
-}
-
-.load-more {
-  display: block;
-  margin: 1rem auto 0 auto;
 }
