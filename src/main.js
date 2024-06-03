@@ -44,6 +44,7 @@ function onSearchInput() {
 async function onFormSubmit(event) {
   event.preventDefault();
 
+  shownRecords = 0;
   currentPage = 1;
   gallery.innerHTML = '';
 
